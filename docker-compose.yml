@@ -1,0 +1,32 @@
+services:
+  web:
+    build: .
+    ports:
+      - "8000:80"
+    volumes:
+      - .:/var/www/html
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DB_HOSTNAME: db
+      DB_USERNAME: root
+      DB_PASSWORD: secret
+      DB_DATABASE: productos_crud
+
+  db:
+    image: mariadb:11.4
+    environment:
+      MARIADB_ROOT_PASSWORD: secret
+      MARIADB_DATABASE: productos_crud
+    volumes:
+      - db_data:/var/lib/mysql
+      - ./database/schema.sql:/docker-entrypoint-initdb.d/schema.sql:ro
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  db_data:
