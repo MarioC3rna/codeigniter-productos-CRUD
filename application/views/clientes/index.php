@@ -1,6 +1,6 @@
 <div class="d-flex justify-content-between align-items-center mb-3">
     <h1 class="h3 mb-0">Clientes</h1>
-    <a href="<?= base_url('clientes/crear') ?>" class="btn btn-primary">Nuevo cliente</a>
+   <a href="<?= site_url('clientes/crear') ?>" class="btn btn-primary">Nuevo cliente</a>
 </div>
 
 <table class="table table-striped table-bordered bg-white">
@@ -30,7 +30,7 @@
                     <td><?= html_escape($cliente->telefono) ?></td>
                     <td><?= html_escape($cliente->email) ?></td>
                     <td class="text-end">
-                        <a href="<?= base_url('clientes/editar/' . $cliente->id) ?>" class="btn btn-sm btn-outline-secondary">Editar</a>
+                        <a href="<?= site_url('clientes/editar/' . $cliente->id) ?>" class="btn btn-sm btn-outline-secondary">Editar</a>
                         <?= form_open('clientes/eliminar/' . $cliente->id, [
                             'class' => 'd-inline',
                             'onsubmit' => "return confirm('¿Eliminar este cliente?');",

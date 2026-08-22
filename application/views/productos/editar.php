@@ -33,6 +33,6 @@
     </div>
 
     <button type="submit" class="btn btn-primary">Actualizar</button>
-    <a href="<?= base_url('productos') ?>" class="btn btn-outline-secondary">Cancelar</a>
+    <a href="<?= site_url('productos') ?>" class="btn btn-outline-secondary">Cancelar</a>
 
 <?= form_close() ?>

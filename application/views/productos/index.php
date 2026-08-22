@@ -1,6 +1,6 @@
 <div class="d-flex justify-content-between align-items-center mb-3">
     <h1 class="h3 mb-0">Productos</h1>
-    <a href="<?= base_url('productos/crear') ?>" class="btn btn-primary">Nuevo producto</a>
+    <a href="<?= site_url('productos/crear') ?>" class="btn btn-primary">Nuevo producto</a>
 </div>
 
 <table class="table table-striped table-bordered bg-white">
@@ -26,7 +26,7 @@
                     <td>Q<?= number_format($producto->precio, 2) ?></td>
                     <td><?= $producto->stock ?></td>
                     <td class="text-end">
-                        <a href="<?= base_url('productos/editar/' . $producto->id) ?>" class="btn btn-sm btn-outline-secondary">Editar</a>
+                        <a href="<?= site_url('productos/editar/' . $producto->id) ?>" class="btn btn-sm btn-outline-secondary">Editar</a>
                         <?= form_open('productos/eliminar/' . $producto->id, [
                             'class' => 'd-inline',
                             'onsubmit' => "return confirm('¿Eliminar este producto?');",
