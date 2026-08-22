@@ -1,211 +1,248 @@
-# 📋 Informe de Actividad — Familiarización con CodeIgniter 3
+# Productos + Clientes CRUD — CodeIgniter 3
 
-Actividad previa al proyecto del módulo "Oficina del Agua".
-Stack asignado: **CodeIgniter**. 
----
+Proyecto de familiarización con el stack **CodeIgniter 3** para el módulo
+"Oficina del Agua". Contiene dos CRUDs sobre la misma estructura:
 
-## 1. Nombre del proyecto
+- **Productos** — prueba de concepto provista por el docente (crear, listar,
+  editar, eliminar).
+- **Clientes** — CRUD construido por el equipo siguiendo el mismo patrón,
+  como ejercicio de práctica antes del proyecto del módulo.
 
-**Productos CRUD — CodeIgniter 3**: aplicación de prueba de concepto que
-implementa un CRUD completo (crear, listar, editar, eliminar) de productos,
-sobre el cual construí mi propio CRUD de **clientes** (entidad del dominio
-"Oficina del Agua") aplicando el mismo patrón.
+Todo corre con **Docker**: PHP 8.3 con Apache en un contenedor y MariaDB 11.4
+en otro, conectados entre sí.
 
-## 2. Stack utilizado
+## Stack utilizado
 
 | Tecnología | Uso |
 |---|---|
-| PHP 8.3 | Lenguaje del backend (imagen `php:8.3-apache`) |
-| CodeIgniter 3.x | Framework MVC |
+| PHP 8.3 | Lenguaje (extensión `mysqli`) |
+| CodeIgniter 3 | Framework MVC |
 | MariaDB 11.4 | Motor de base de datos |
-| Bootstrap 5 (CDN) | Estilos e interfaz |
-| Composer | Gestor de dependencias PHP |
-| vlucas/phpdotenv | Carga de variables de entorno (`.env`) |
-| Docker + Docker Compose | Entorno de ejecución reproducible |
+| Apache 2.4 | Servidor web (dentro de la imagen `php:8.3-apache`) |
+| Composer | Gestor de dependencias (`vlucas/phpdotenv`, `codeigniter/framework`) |
+| Bootstrap 5 (CDN) | Estilos de las vistas |
+| Docker Compose | Orquestación de los contenedores `web` y `db` |
 
-## 3. Requisitos
+## Requisitos
 
-Para ejecutar este proyecto solo se necesita **Docker Desktop**, ya que PHP,
-Apache y la base de datos corren en contenedores. Sin Docker, la alternativa
-es PHP 8.1+, Composer y un MySQL/MariaDB local.
+- **Docker Desktop** corriendo (es la forma principal de ejecutarlo)
+- O bien, sin Docker: PHP 8.1+, Composer y MySQL/MariaDB locales
 
-## 4. Instalación
-
-Las dependencias PHP se administran con **Composer**
-(`composer.json` / `composer.lock`). Si la carpeta `vendor/` no está presente:
+## Instalación
 
 ```bash
 composer install
 ```
 
-En este proyecto `vendor/` viene incluido y además se monta dentro del
-contenedor, por lo que con Docker no hace falta instalar nada a mano.
+Instala el núcleo de CodeIgniter y `vlucas/phpdotenv` dentro de `vendor/`.
 
-## 5. Configuración
+> Nota: puede aparecer un error inofensivo de un script (`sed: invalid command`)
+> al instalar una dependencia de testing (`vfsstream`): es un script pensado
+> para GNU `sed` que falla fuera de Linux; no afecta a la aplicación.
 
-- **Variables de entorno**: copiar `.env.example` a `.env`
-  (`DB_HOSTNAME`, `DB_USERNAME`, `DB_PASSWORD`, `DB_DATABASE`).
-  La carga ocurre en `index.php` mediante phpdotenv antes de arrancar el framework.
-  En Docker, las variables definidas en `docker-compose.yml` tienen prioridad
-  sobre `.env` (phpdotenv se carga en modo inmutable).
-- **Configuración general** (`application/config/config.php`):
-  `base_url` fijada a `http://localhost:8000/`,
-  `sess_save_path = sys_get_temp_dir()` y `csrf_protection = TRUE`.
-- **Base de datos** (`application/config/database.php`):
-  lee las variables con `getenv()` y tiene valores por defecto si no existe `.env`.
+## Configuración
 
-## 6. Base de datos
+El proyecto lee la conexión a la BD desde variables de entorno:
 
-- **Motor**: MariaDB 11.4 (compatible MySQL).
-- **Conexión**: configurada en `application/config/database.php`; el grupo
-  `default` crea el objeto `$this->db`.
-- **Estructura de tablas**: se define con scripts SQL manuales en `database/`
-  (`schema.sql` para productos, `schema_cliente.sql` para clientes).
-  ⚠️ CodeIgniter 3 **no usa migraciones** como Laravel; el equivalente aquí
-  son los scripts SQL. Con Docker, el script se ejecuta automáticamente la
-  primera vez que se crea el volumen (montado en `/docker-entrypoint-initdb.d/`).
+1. Copia `.env.example` a `.env` y ajusta tus datos si corres localmente:
 
-Operaciones CRUD (implementadas con **Query Builder** en el modelo,
-que escapa los valores automáticamente):
+```env
+DB_HOSTNAME=localhost
+DB_USERNAME=root
+DB_PASSWORD=
+DB_DATABASE=productos_crud
+```
 
-| Operación | Método del modelo | SQL equivalente |
-|---|---|---|
-| Insertar | `$this->db->insert('clientes', $datos)` | INSERT INTO ... |
-| Consultar todos | `->get('clientes')->result()` | SELECT * ... (varias filas) |
-| Consultar uno | `->where('id',$id)->get(...)->row()` | SELECT ... WHERE id=... (una fila) |
-| Actualizar | `->where('id',$id)->update(...)` | UPDATE ... WHERE id=... |
-| Eliminar | `->where('id',$id)->delete(...)` | DELETE ... WHERE id=... |
+2. Con Docker **no hace falta tocar `.env`**: el `docker-compose.yml` define
+   las mismas variables (`DB_HOSTNAME: db`, etc.) y esas tienen prioridad,
+   porque phpdotenv se carga en modo inmutable (no pisa variables ya existentes).
 
-## 7. Ejecución
+La lectura ocurre en `index.php` (carga el `.env` antes de arrancar el
+framework) y `application/config/database.php` consume los valores con `getenv()`.
+
+## Base de datos
+
+- **Motor:** MariaDB 11.4.
+- **Conexión:** se configura en `application/config/database.php`
+  (hostname, usuario, contraseña, base, driver `mysqli`).
+- **Estructura de tablas:** este proyecto no usa migraciones; las tablas se
+  definen con scripts SQL en `database/`:
+  - `database/schema.sql` → tabla `productos`
+  - `database/schema_cliente.sql` → tabla `clientes`
+
+### Con Docker
+
+Al primer arranque, MariaDB ejecuta automáticamente todo lo que esté en
+`docker-entrypoint-initdb.d/` (ahí está montado `schema.sql`). Para `clientes`,
+importa su script manualmente:
+
+```powershell
+Get-Content database\schema_cliente.sql -Raw | docker compose exec -T db mariadb -uroot -psecret
+```
+
+Verifica:
+
+```powershell
+docker compose exec db mariadb -uroot -psecret productos_crud -e "DESCRIBE clientes;"
+```
+
+⚠️ Los scripts de inicialización **solo corren cuando el volumen `db_data`
+está vacío**. Si cambias un schema después, borra el volumen:
+`docker compose down -v` y vuelve a subir.
+
+### Sin Docker
 
 ```bash
-docker compose up -d --build     # primera vez (construye imágenes)
+mysql -u root -p < database/schema.sql
+mysql -u root -p < database/schema_cliente.sql
 ```
 
-Aplicación disponible en:
+## Ejecución
+
+```powershell
+docker compose up -d --build
+```
+
+URLs de la aplicación:
 
 - Productos: <http://localhost:8000/index.php/productos>
-- Clientes (mi práctica): <http://localhost:8000/index.php/clientes>
+- Clientes: <http://localhost:8000/index.php/clientes>
 
-Comandos útiles: `docker compose stop|start|down` (los datos persisten en el
-volumen `db_data`); `docker compose down -v` reinicializa la base de datos.
+Sin Docker: `php -S localhost:8000` desde la raíz (mismas URLs).
 
-## 8. Estructura del proyecto
+Comandos útiles:
 
-| Pregunta | Respuesta |
+```powershell
+docker compose logs -f web   # errores de PHP/Apache en vivo
+docker compose down          # apagar (conserva los datos)
+docker compose down -v       # apagar y borrar la BD
+```
+
+---
+
+## Estructura del proyecto
+
+| ¿Qué buscas? | Dónde está |
 |---|---|
-| ¿Dónde están las rutas? | `application/config/routes.php` define el controlador por defecto; además CI3 resuelve por convención: `index.php/controlador/metodo/parametro` |
-| ¿Dónde están los controladores? | `application/controllers/` (`Productos.php`, `Clientes.php`) |
-| ¿Dónde están los modelos? | `application/models/` (`Producto_model.php`, `Cliente_model.php`) |
-| ¿Dónde están las vistas? | `application/views/` (por entidad + plantillas compartidas en `templates/`) |
-| ¿Dónde está la configuración? | `application/config/` (`config.php`, `database.php`, `routes.php`, `autoload.php`, etc.) |
-| ¿Dónde están las migraciones? | No existen en CI3; su equivalente son los scripts SQL de `database/` |
-| ¿Dónde se administran las dependencias? | Composer: `composer.json`, `composer.lock`, carpeta `vendor/` |
+| Rutas | `application/config/routes.php` (controlador por defecto) |
+| Controladores | `application/controllers/` (`Productos.php`, `Clientes.php`) |
+| Modelos | `application/models/` (`Producto_model.php`, `Cliente_model.php`) |
+| Vistas | `application/views/` (+ `views/templates/` header/footer compartidos) |
+| Configuraciones | `application/config/` (`config.php`, `database.php`, `autoload.php`...) |
+| Migraciones | CI3 no las usa aquí: las tablas viven en scripts SQL de `database/` |
+| Dependencias | `composer.json` → instaladas en `vendor/` |
 
-Piezas clave del directorio `application/config/`:
+Otros archivos clave en la raíz: `index.php` (front controller: carga `.env`
+y arranca el framework), `Dockerfile` y `docker-compose.yml`.
 
-- `autoload.php`: componentes que se cargan solos en cada petición
-  (aquí: librerías `database` y `session`, helpers `url` y `form`).
-- `constants.php`: constantes fijas (permisos de archivos, códigos de salida).
-- `hooks.php` / `memcached.php` / `foreign_chars.php`: disponibles pero sin uso en este proyecto.
+## Flujo de una petición
 
-## 9. Flujo de una petición (ejemplo: crear cliente)
+Ejemplo: guardar un cliente nuevo.
 
 ```
-Navegador envía POST /index.php/clientes/crear (con token CSRF)
-   ↓ index.php carga .env, autoload y arranca el framework
-Router identifica controlador Clientes, método crear()
-   ↓ form_validation valida las reglas del servidor
-Cliente_model->crear($datos)  →  $this->db->insert()  →  MariaDB
-   ↓ flashdata guarda el mensaje de éxito para la siguiente petición
-redirect() a la lista  →  vista clientes/index muestra la tabla + mensaje
+Navegador envía POST /index.php/clientes/crear
+        ↓
+routes.php resuelve el controlador Clientes → método crear()
+        ↓
+form_validation valida los campos contra sus reglas
+        ↓
+Cliente_model->crear([...]) → Query Builder genera INSERT → MariaDB
+        ↓
+flashdata (mensaje) + redirect('clientes')
+        ↓
+GET /index.php/clientes → index() → obtener_todos() → vista index.php
+        ↓
+HTML final al navegador
 ```
 
-Cada petición repite el ciclo completo: PHP destruye todo al final, y solo
-la base de datos y la sesión conservan información entre peticiones.
+## Operaciones CRUD
 
-## 10. Problemas encontrados y soluciones
+| Operación | ¿Dónde se implementa? | ¿Cómo funciona? |
+|---|---|---|
+| **Crear** | `Clientes::crear()` + vista `crear.php` | Valida con `form_validation`; si pasa, `Cliente_model->crear()` hace `INSERT` vía Query Builder y redirige con mensaje flash |
+| **Consultar** | `Clientes::index()` + vista `index.php` | `obtener_todos()` hace `SELECT * ORDER BY nombre` y pasa el resultado a la tabla |
+| **Actualizar** | `Clientes::editar($id)` + vista `editar.php` | Busca por id (404 si no existe); valida; `actualizar()` hace `UPDATE WHERE id`; si falla validación repuebla el formulario con `set_value()` |
+| **Eliminar** | `Clientes::eliminar($id)` desde `index.php` | Formulario POST propio (CSRF + confirm JS); `eliminar()` hace `DELETE WHERE id` y redirige |
 
-| # | Problema | Causa | Solución |
-|---|---|---|---|
-| 1 | `Access denied for user 'root'@'localhost'` al conectar | El volumen de MariaDB se había inicializado antes con otra contraseña; solo se configura en el primer arranque | `docker compose down -v` y volver a levantar para reinicializar con la contraseña correcta y ejecutar el schema |
-| 2 | Warnings `mkdir(): Invalid path` y `session_start(): Failed to initialize storage module` | `sess_save_path` era NULL y el contenedor PHP no trae `session.save_path` definido | Fijar `$config['sess_save_path'] = sys_get_temp_dir()` (funciona en Docker y localmente) |
-| 3 | Los botones llevaban a `http://172.18.0.3/...` y la página caía | `base_url` vacía hace que CI3 autodetecte la IP interna del contenedor | Fijar `$config['base_url'] = 'http://localhost:8000/'` |
-| 4 | Error 404 de Apache al hacer clic en botones | Las vistas usaban `base_url()`, que NO incluye `index.php`; sin mod_rewrite esas rutas no existen | Cambiar a `site_url()` en los enlaces de navegación (incluye el `index_page` automáticamente) |
-| 5 | `ERROR 1064` al importar el script SQL | Usé `//` como comentario, que no es válido en SQL | Los comentarios en SQL van con `--` (y espacio después de los guiones) |
-| 6 | `failed to connect to the docker API` | Docker Desktop estaba apagado | Iniciar Docker Desktop y esperar a que el motor esté corriendo |
+## Problemas encontrados y soluciones
 
-## 11. Buenas prácticas investigadas
+1. **"Access denied for user 'root'" al conectar** — El volumen de MariaDB
+   había quedado inicializado con otra contraseña (los scripts de inicio solo
+   corren la primera vez). Solución: `docker compose down -v` y volver a subir
+   para reinicializar con la contraseña actual.
 
-1. **Separación de responsabilidades (MVC)**: controlador (flujo), modelo
-   (datos), vista (presentación). Facilita mantener y probar cada parte por separado.
-2. **Query Builder en lugar de SQL concatenado**: escapa valores
-   automáticamente y reduce drásticamente el riesgo de inyección SQL.
-3. **Validación siempre en el servidor** (`form_validation`): el `required`
-   de HTML es cómodo pero se puede burlar; la regla del servidor es la real.
-4. **Protección CSRF activa**: `form_open()` inserta un token único por
-   formulario; evita que sitios externos envíen acciones en nombre del usuario.
-5. **Escape de salida con `html_escape()`** en las vistas: neutraliza XSS
-   cuando un usuario guarda `<script>` como texto.
-6. **Credenciales fuera del código** (variables de entorno + `.gitignore`),
-   nunca versionar el `.env` real.
+2. **Warning `mkdir(): Invalid path` en sesiones** — En el contenedor no existe
+   `session.save_path`. Solución: en `config.php`,
+   `$config['sess_save_path'] = sys_get_temp_dir();` (portable entre Docker y Windows).
 
-## 12. Reflexión técnica
+3. **Error SQL `1064` al importar el schema** — Usé `//` como comentario,
+   que no es válido en SQL (y `--` exige un espacio después). Solución:
+   comentarios con `-- texto`.
 
-**1. ¿Qué fue lo más costoso de entender del framework?**
-Entender que todo pasa por `index.php` y cómo se construyen las URLs:
-la diferencia entre `base_url()` y `site_url()` (esta última agrega
-`index.php` automáticamente) me causó dos errores distintos hasta que lo
-entendí. También me costó asimilar que cada petición reconstruye toda la
-aplicación desde cero y que nada sobrevive salvo BD y sesión.
+4. **Los botones apuntaban a una IP interna de Docker (`172.18.0.3`)** —
+   `$config['base_url'] = ''` hacía que CI3 autodetectara la IP del contenedor.
+   Solución: fijar `'http://localhost:8000/'` en `config.php`.
+
+5. **404 de Apache al hacer clic en "Nuevo cliente"** — Las vistas usaban
+   `base_url()`, que NO agrega `index.php` a la URL. Sin mod_rewrite, esas rutas
+   no existen. Solución: usar `site_url()` para los enlaces de navegación
+   (sí incluye el `index_page`).
+
+6. **Docker daemon no corría tras cerrar/reiniciar** — Basta abrir Docker
+   Desktop y esperar a que esté "Running"; luego `docker compose up -d`.
+
+## Buenas prácticas investigadas
+
+1. **Validación siempre del lado del servidor** (`form_validation`): la del
+   navegador se puede saltar fácilmente; la del servidor protege los datos.
+2. **Token CSRF en todos los formularios** (`form_open()` lo inyecta solo):
+   evita que sitios externos envíen formularios en nombre del usuario.
+3. **Escapar la salida** (`html_escape()`): evita XSS — que un campo guardado
+   con `<script>` se ejecute en otros navegadores.
+4. **Query Builder en vez de SQL concatenado**: los valores van escapados por
+   el framework, reduciendo riesgo de inyección SQL.
+5. **Credenciales fuera del código** (`.env` + `getenv()`): no publicar
+   contraseñas en el repo; mismo enfoque que Laravel.
+6. **Convención sobre configuración de CI3**: nombres de clase/archivo
+   consistentes (`Cliente_model` ↔ `cliente_model.php`) hacen que el autoload
+   del framework funcione sin registrar nada.
+
+## Reflexión técnica
+
+**1. ¿Qué fue lo que más te costó entender del framework?**
+Entender qué se carga automáticamente en cada petición y qué no:
+`autoload.php` trae librerías/helpers globales (`database`, `session`, `url`,
+`form`), mientras que modelos y vistas se cargan manualmente donde se usan.
+También me costó distinguir `base_url()` vs `site_url()` — casi iguales, pero
+solo la segunda agrega `index.php` a la URL.
 
 **2. ¿Qué parte de la estructura te pareció más importante?**
-La carpeta `application/config/`. Ahí viven las decisiones de toda la app
-(conexión a BD, sesiones, CSRF, rutas, autoload). Cuando algo falla,
-casi siempre la respuesta empieza revisando ahí.
+La carpeta `application/`: concentra TODO lo nuestro (controllers, models,
+views, config). La carpeta `system/` es el framework y no se toca. Saber eso
+divide el problema en "mi código" vs "el framework".
 
-**3. ¿Cómo funciona una petición, con tus propias palabras?**
-El navegador pide una URL que siempre entra por `index.php`. Ese archivo
-prepara el entorno (variables de entorno, autoload) y arranca el framework;
-el router deduce qué controlador y método atender según la URL; el método
-usa el modelo para hablar con la base de datos y finalmente carga vistas
-que devuelven HTML al navegador. Después de responder, PHP borra todo de
-memoria hasta la siguiente petición.
+**3. Explica con tus propias palabras cómo funciona una petición.**
+PHP no mantiene la app viva: en cada visita arranca de cero. `index.php` carga
+el `.env` y el framework, el router decide qué controlador atiende la URL,
+el método del controlador valida y pide datos al modelo, el modelo habla con
+MariaDB usando Query Builder, el controlador pasa esos datos a una vista y la
+vista devuelve HTML. Al responder, la memoria se limpia; lo único que sobrevive
+está en la BD o en la sesión.
 
-**4. Tres buenas prácticas y por qué importan**
-- *Query Builder*: previene inyección SQL sin esfuerzo manual.
-- *Validación de servidor*: es la única que no puede ser burlada desde el navegador.
-- *CSRF + escape de salida*: cubren los ataques web más comunes (envíos
-  falsificados e inyección de scripts). Las tres comparten la idea de
-  "no confiar en nada que venga del usuario".
+**4. Menciona 3 buenas prácticas y por qué son importantes.**
+Validación server-side (la del cliente se salta), token CSRF (evita envíos
+falsificados desde otros sitios) y escapar la salida con `html_escape()`
+(evita XSS). Detalle completo en la sección anterior.
 
-**5. Un problema técnico y cómo lo resolví**
-El error `Access denied` de MariaDB: descubrí con `printenv` que las
-credenciales llegaban bien al contenedor web, y probando conexión manual
-con `mariadb -u root -p` confirmé que el problema era la contraseña
-almacenada. Investigué que la inicialización de MariaDB en Docker ocurre
-solo la primera vez que se crea el volumen, así que `docker compose down -v`
-reinicializó todo correctamente. Me enseñó a diagnosticar por capas
-(variables → red → servicio) en vez de adivinar.
+**5. Menciona un problema técnico y cómo lo solucionaste.**
+El más didáctico fue el de `base_url` vacío: los botones generaban URLs hacia
+la IP interna del contenedor y luego 404. Lo diagnosticé comparando el HTML
+generado (con curl) contra lo esperado, entendí la diferencia entre
+`base_url()` y `site_url()`, y fijé la URL correcta en `config.php`.
 
-**6. ¿Qué te llevas para el proyecto del módulo?**
-Un entorno Docker reproducible que puedo armar y tirar sin miedo
-(`down -v` incluido), el mapa mental de dónde vive cada cosa en CI3
-(`config/`, controllers, models, views) y la disciplina de validar y
-escapar todo lo que entra y sale. También aprendí a leer los errores con
-calma: casi siempre dicen exactamente qué capa falló.
-
-
-![alt text](image.png)
-
-
-![alt text](image-1.png)
-
-
-![alt text](image-2.png)
-
-
-![alt text](image-3.png)
-
-
-![alt text](image-4.png)
+**6. ¿Qué aprendiste que te servirá para el proyecto del módulo?**
+Levantar el entorno completo con Docker Compose (app + BD + import automático
+de schemas), diagnosticar con logs (`docker compose logs -f web`) y con curl
+en vez de adivinar en el navegador, y el flujo completo MVC: ahora puedo
+copiar el patrón clientes para cualquier entidad nueva (contadores, tarifas...)
+cambiando tabla, campos y validaciones.
