@@ -1,13 +1,17 @@
+<?php // Formulario para crear un cliente nuevo ?>
 <h1 class="h3 mb-3">Nuevo cliente</h1>
 
+<?php // Si el servidor rechazó los datos, aquí se listan los errores de validación ?>
 <?php if (validation_errors()): ?>
     <div class="alert alert-danger">
         <?= validation_errors('<p class="mb-0">', '</p>') ?>
     </div>
 <?php endif; ?>
 
+<?php // Abre el formulario hacia clientes/crear e incluye automáticamente el token CSRF ?>
 <?= form_open('clientes/crear', ['class' => 'bg-white p-4 rounded shadow-sm']) ?>
 
+    <?php // Campos obligatorios (required) ?>
     <div class="mb-3">
         <?= form_label('Nombre', 'nombre', ['class' => 'form-label']) ?>
         <?= form_input([
@@ -32,6 +36,7 @@
         ]) ?>
     </div>
 
+    <?php // Campos opcionales (sin required) ?>
     <div class="mb-3">
         <?= form_label('Dirección', 'direccion', ['class' => 'form-label']) ?>
         <?= form_input([

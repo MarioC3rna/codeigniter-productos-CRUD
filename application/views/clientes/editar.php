@@ -1,15 +1,22 @@
+<?php // Formulario para editar un cliente ya existente.
+      // El objeto $cliente llega desde el controlador con sus datos actuales ?>
 <h1 class="h3 mb-3">Editar cliente</h1>
 
+<?php // Errores de validación si el servidor rechazó los datos ?>
 <?php if (validation_errors()): ?>
     <div class="alert alert-danger">
         <?= validation_errors('<p class="mb-0">', '</p>') ?>
     </div>
 <?php endif; ?>
 
+<?php // Se envía el id en la URL para que el controlador sepa a quién actualizar;
+      // incluye automáticamente el token CSRF ?>
 <?= form_open('clientes/editar/' . $cliente->id, ['class' => 'bg-white p-4 rounded shadow-sm']) ?>
 
     <div class="mb-3">
         <?= form_label('Nombre', 'nombre', ['class' => 'form-label']) ?>
+        <?php // set_value: al entrar muestra lo guardado en la BD;
+              // si la validación falló, muestra lo último que escribió el usuario ?>
         <?= form_input([
             'name' => 'nombre',
             'id' => 'nombre',
